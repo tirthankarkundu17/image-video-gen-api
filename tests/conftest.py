@@ -11,6 +11,7 @@ from app.services.vertex_client import get_vertex_client
 @pytest.fixture
 def mock_settings():
     return Settings(
+        _env_file=None,
         GCP_PROJECT_ID="test-project-123",
         GCP_LOCATION="us-central1",
         AUTH_ENABLED=True,
@@ -18,6 +19,7 @@ def mock_settings():
         API_KEY="test-secret-key",
         DEFAULT_IMAGE_MODEL="imagen-3.0-generate-002",
         DEFAULT_VIDEO_MODEL="veo-2.0-generate-001",
+        GCS_IMAGE_BUCKET=None,
         VIDEO_POLL_INTERVAL_SECONDS=0.01,
         VIDEO_POLL_TIMEOUT_SECONDS=1.0,
     )

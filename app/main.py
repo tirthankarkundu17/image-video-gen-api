@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from app.config import get_settings
 from app.routers.health import router as health_router
 from app.routers.images import router as images_router
+from app.routers.storage import router as storage_router
 from app.routers.videos import router as videos_router
 from app.services.vertex_client import get_vertex_client
 
@@ -83,6 +84,7 @@ def create_app() -> FastAPI:
     # Include API routers
     app.include_router(health_router)
     app.include_router(images_router)
+    app.include_router(storage_router)
     app.include_router(videos_router)
 
     return app

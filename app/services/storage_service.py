@@ -1,3 +1,4 @@
+from datetime import timedelta
 import logging
 from typing import Optional, Tuple
 
@@ -78,9 +79,19 @@ def upload_image_bytes(
             destination_blob_name,
             gcs_err,
         )
+        err_msg = str(gcs_err)
+        if "403" in err_msg or "Permission" in err_msg:
+            sa_email = getattr(client._credentials, "service_account_email", "your service account")
+            detail = (
+                f"Permission denied uploading to GCS bucket '{bucket_name}'. "
+                f"Ensure {sa_email} has the 'Storage Object User' role (roles/storage.objectUser) on bucket '{bucket_name}'."
+            )
+        else:
+            detail = f"Google Cloud Storage upload failed: {err_msg}"
+
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Google Cloud Storage upload failed: {str(gcs_err)}",
+            detail=detail,
         )
     except Exception as exc:
         logger.error(
@@ -95,7 +106,18 @@ def upload_image_bytes(
         )
 
     gcs_uri = f"gs://{bucket_name}/{destination_blob_name}"
-    gcs_url = f"https://storage.googleapis.com/{bucket_name}/{destination_blob_name}"
+
+    # Generate V4 Signed URL (valid for 7 days) so clients can view the image
+    # directly without running into GCP Organization Public Access Prevention policies
+    try:
+        gcs_url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(days=7),
+            method="GET",
+        )
+    except Exception as sign_err:
+        logger.warning("Could not generate signed URL for %s: %s", gcs_uri, sign_err)
+        gcs_url = f"https://storage.googleapis.com/{bucket_name}/{destination_blob_name}"
 
     logger.info("Successfully uploaded image to %s", gcs_uri)
     return gcs_uri, gcs_url

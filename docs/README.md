@@ -45,6 +45,7 @@ If you set `API_KEY=your-secret-key` in your server `.env`:
 ### 1. Health & Monitoring
 - `GET /healthz` - Liveness probe
 - `GET /readyz` - Readiness probe (checks GCP project & client status)
+- `POST /api/v1/storage/test-upload` - Test GCS upload connectivity and permissions without calling AI models
 
 ### 2. Image Generation (Imagen 3 & Gemini Image Models)
 - `POST /api/v1/images/generate` - Default square 1:1

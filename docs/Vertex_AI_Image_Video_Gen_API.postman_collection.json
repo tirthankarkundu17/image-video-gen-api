@@ -75,6 +75,34 @@
             "description": "Checks GCP Project configuration and Vertex AI client readiness."
           },
           "response": []
+        },
+        {
+          "name": "Test GCS Storage Upload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bucket\": \"\",\n  \"path_prefix\": \"test-uploads\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/storage/test-upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "storage", "test-upload"]
+            },
+            "description": "Uploads a tiny 1x1 test image to verify Google Cloud Storage bucket existence, permissions, and connectivity without calling AI models."
+          },
+          "response": []
         }
       ]
     },
