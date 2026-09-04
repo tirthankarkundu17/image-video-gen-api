@@ -97,9 +97,9 @@ run:
 	@echo "==> Running container $(CONTAINER_NAME) on port $(PORT)..."
 	docker run -d \
 		--name $(CONTAINER_NAME) \
-		-p $(PORT):8000 \
+		-p $(PORT):8080 \
 		--env-file .env \
-		-v "$(shell pwd)/service-account.json:/app/service-account.json:ro" \
+		-v "$(CURDIR)/service-account.json:/app/service-account.json:ro" \
 		$(FULL_IMAGE)
 	@echo "==> Container running. Access API at http://localhost:$(PORT)/docs"
 
