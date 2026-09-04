@@ -46,11 +46,12 @@ If you set `API_KEY=your-secret-key` in your server `.env`:
 - `GET /healthz` - Liveness probe
 - `GET /readyz` - Readiness probe (checks GCP project & client status)
 
-### 2. Image Generation (Imagen 3)
+### 2. Image Generation (Imagen 3 & Gemini Image Models)
 - `POST /api/v1/images/generate` - Default square 1:1
 - `POST /api/v1/images/generate` - Widescreen 16:9 with person generation controls
 - `POST /api/v1/images/generate` - Portrait 9:16
 - `POST /api/v1/images/generate` - Batch generation (multiple images)
+- `POST /api/v1/images/generate` - Generate & Upload directly to Google Cloud Storage (`upload_to_gcs: true`)
 
 ### 3. Video Generation (Veo)
 - `POST /api/v1/videos/generate` - Asynchronous generation (returns 202 and automatically extracts and sets `operation_id` for polling)

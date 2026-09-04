@@ -47,6 +47,14 @@ class Settings(BaseSettings):
         default="veo-2.0-generate-001", description="Default Veo model ID"
     )
 
+    # Google Cloud Storage settings
+    GCS_IMAGE_BUCKET: Optional[str] = Field(
+        default=None, description="Default Google Cloud Storage bucket for uploading generated images"
+    )
+    GCS_PATH_PREFIX: str = Field(
+        default="generated-images", description="Default GCS path prefix/folder"
+    )
+
     # Server settings
     HOST: str = Field(default="0.0.0.0", description="Bind host")
     PORT: int = Field(default=8000, description="Bind port")

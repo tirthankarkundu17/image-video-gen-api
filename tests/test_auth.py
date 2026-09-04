@@ -93,6 +93,7 @@ def test_auth_disabled_bypass(client, mock_vertex_client):
     disabled_settings = Settings(
         GCP_PROJECT_ID="test-project",
         AUTH_ENABLED=False,
+        DEFAULT_IMAGE_MODEL="imagen-3.0-generate-002",
     )
     app.dependency_overrides[get_settings] = lambda: disabled_settings
 
@@ -116,6 +117,8 @@ def test_get_vertex_credentials_from_info(mock_from_info):
     mock_from_info.return_value = MagicMock()
 
     settings = Settings(
+        _env_file=None,
+        GCP_PROJECT_ID="",
         GCP_SERVICE_ACCOUNT_INFO='{"type": "service_account", "project_id": "inline-proj"}',
     )
     creds, proj = get_vertex_credentials(settings)
@@ -128,7 +131,7 @@ def test_get_vertex_credentials_from_adc(mock_default):
     from app.auth.gcp_auth import get_vertex_credentials
     mock_default.return_value = (MagicMock(), "adc-proj")
 
-    settings = Settings()
+    settings = Settings(_env_file=None, GCP_PROJECT_ID="", GCP_SERVICE_ACCOUNT_FILE="")
     creds, proj = get_vertex_credentials(settings)
     assert proj == "adc-proj"
     mock_default.assert_called_once()

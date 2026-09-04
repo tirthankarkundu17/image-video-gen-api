@@ -2,6 +2,7 @@ import base64
 from datetime import datetime, timezone
 import logging
 from typing import List, Optional
+import uuid
 
 from fastapi import HTTPException, status
 from google import genai
@@ -14,6 +15,7 @@ from app.schemas.image import (
     ImageGenerationRequest,
     ImageGenerationResponse,
 )
+from app.services.storage_service import upload_image_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +26,24 @@ def generate_images(
     settings: Settings,
 ) -> ImageGenerationResponse:
     """
-    Generates images using Vertex AI Imagen models (e.g. imagen-3.0-generate-002).
+    Generates images using Vertex AI (Gemini multimodal or Imagen models),
+    with optional automated upload to Google Cloud Storage.
     """
     model_name = request.model or settings.DEFAULT_IMAGE_MODEL
 
-    images: List[GeneratedImageData] = []
+    # Fail fast if upload_to_gcs is requested but no bucket is available
+    if request.upload_to_gcs:
+        target_bucket = request.gcs_bucket or settings.GCS_IMAGE_BUCKET
+        if not target_bucket:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Image generation requested upload_to_gcs=true, but no GCS bucket was configured. "
+                    "Please specify 'gcs_bucket' in the request payload or configure 'GCS_IMAGE_BUCKET' in server settings."
+                ),
+            )
+
+    extracted_images: List[tuple[bytes, str]] = []
 
     # Check if model is a Gemini image generation model (e.g. gemini-3.1-flash-lite-image)
     if "gemini" in model_name.lower():
@@ -72,21 +87,8 @@ def generate_images(
                     continue
                 for part in candidate.content.parts:
                     if part.inline_data and part.inline_data.data:
-                        base64_str = base64.b64encode(part.inline_data.data).decode("utf-8")
                         mime_type = part.inline_data.mime_type or request.output_mime_type
-                        images.append(
-                            GeneratedImageData(
-                                index=len(images) + 1,
-                                mime_type=mime_type,
-                                base64_data=base64_str,
-                            )
-                        )
-
-        if not images:
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Vertex AI returned no images. Prompt may have triggered safety filters or model could not generate content.",
-            )
+                        extracted_images.append((part.inline_data.data, mime_type))
 
     else:
         # Standard Imagen model generation (e.g. imagen-3.0-generate-002)
@@ -132,30 +134,54 @@ def generate_images(
                 detail=f"Image generation failed: {str(exc)}",
             )
 
-        if not response or not response.generated_images:
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Vertex AI returned no images. Prompt may have triggered safety filters or model could not generate content.",
+        if response and response.generated_images:
+            for gen_img in response.generated_images:
+                if gen_img.image and gen_img.image.image_bytes:
+                    mime_type = gen_img.image.mime_type or request.output_mime_type
+                    extracted_images.append((gen_img.image.image_bytes, mime_type))
+
+    if not extracted_images:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Vertex AI returned no images. Prompt may have triggered safety filters or model could not generate content.",
+        )
+
+    # Process images: Base64 encoding and optional GCS upload
+    batch_id = uuid.uuid4().hex[:8]
+    timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    images: List[GeneratedImageData] = []
+
+    for idx, (raw_bytes, mime_type) in enumerate(extracted_images, start=1):
+        base64_str: Optional[str] = None
+        if request.include_base64 or not request.upload_to_gcs:
+            base64_str = base64.b64encode(raw_bytes).decode("utf-8")
+
+        gcs_uri: Optional[str] = None
+        gcs_url: Optional[str] = None
+
+        if request.upload_to_gcs:
+            bucket_name = request.gcs_bucket or settings.GCS_IMAGE_BUCKET
+            prefix = (request.gcs_path_prefix or settings.GCS_PATH_PREFIX).strip("/")
+            ext = "png" if "png" in mime_type else "jpg"
+            filename = f"{timestamp_str}_{batch_id}_{idx}.{ext}"
+            destination_blob = f"{prefix}/{filename}" if prefix else filename
+
+            gcs_uri, gcs_url = upload_image_bytes(
+                image_bytes=raw_bytes,
+                bucket_name=bucket_name,  # type: ignore[arg-type]
+                destination_blob_name=destination_blob,
+                content_type=mime_type,
             )
 
-        for idx, gen_img in enumerate(response.generated_images):
-            mime_type = request.output_mime_type
-            base64_str = ""
-
-            if gen_img.image and gen_img.image.image_bytes:
-                base64_str = base64.b64encode(gen_img.image.image_bytes).decode("utf-8")
-                if gen_img.image.mime_type:
-                    mime_type = gen_img.image.mime_type
-            elif gen_img.image and gen_img.image.gcs_uri:
-                base64_str = gen_img.image.gcs_uri
-
-            images.append(
-                GeneratedImageData(
-                    index=idx + 1,
-                    mime_type=mime_type,
-                    base64_data=base64_str,
-                )
+        images.append(
+            GeneratedImageData(
+                index=idx,
+                mime_type=mime_type,
+                base64_data=base64_str,
+                gcs_uri=gcs_uri,
+                gcs_url=gcs_url,
             )
+        )
 
     return ImageGenerationResponse(
         model=model_name,

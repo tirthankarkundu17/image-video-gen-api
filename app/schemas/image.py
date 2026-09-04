@@ -51,12 +51,30 @@ class ImageGenerationRequest(BaseModel):
         description="Vertex AI model identifier (defaults to configured DEFAULT_IMAGE_MODEL)",
         examples=["imagen-3.0-generate-002"],
     )
+    upload_to_gcs: bool = Field(
+        default=False,
+        description="Optional toggle to upload generated images to Google Cloud Storage (GCS)",
+    )
+    gcs_bucket: Optional[str] = Field(
+        default=None,
+        description="Google Cloud Storage bucket name (overrides configured GCS_IMAGE_BUCKET)",
+    )
+    gcs_path_prefix: Optional[str] = Field(
+        default=None,
+        description="Optional folder/prefix path inside bucket (defaults to 'generated-images')",
+    )
+    include_base64: bool = Field(
+        default=True,
+        description="Whether to include base64_data in response (can be set to false when upload_to_gcs=true to save bandwidth)",
+    )
 
 
 class GeneratedImageData(BaseModel):
     index: int
     mime_type: str
-    base64_data: str
+    base64_data: Optional[str] = None
+    gcs_uri: Optional[str] = None
+    gcs_url: Optional[str] = None
 
 
 class ImageGenerationResponse(BaseModel):

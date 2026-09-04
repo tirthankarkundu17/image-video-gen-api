@@ -178,6 +178,29 @@
             "description": "Generates a batch of 2 images with 4:3 aspect ratio."
           },
           "response": []
+        },
+        {
+          "name": "Generate Image & Upload to GCS",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"A stunning isometric 3D render of a futuristic floating island with crystal waterfalls and tiny cabins\",\n  \"aspect_ratio\": \"1:1\",\n  \"number_of_images\": 1,\n  \"upload_to_gcs\": true,\n  \"gcs_bucket\": \"my-gcs-bucket-name\",\n  \"gcs_path_prefix\": \"generated-images\",\n  \"include_base64\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/images/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "images", "generate"]
+            },
+            "description": "Generates an image, uploads it directly to Google Cloud Storage (GCS), and returns the gs:// URI and storage URL."
+          },
+          "response": []
         }
       ]
     },
