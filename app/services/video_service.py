@@ -166,7 +166,9 @@ def get_video_operation_status(
     """
     Polls the current status of a Vertex AI video generation operation.
     """
-    op = types.GenerateVideosOperation(name=operation_id)
+    # Use model_construct to avoid static type checker warnings where
+    # Pylance/Pyright does not recognize fields inherited from Operation (ABC)
+    op = types.GenerateVideosOperation.model_construct(name=operation_id)
 
     try:
         updated_op = client.operations.get(op)
