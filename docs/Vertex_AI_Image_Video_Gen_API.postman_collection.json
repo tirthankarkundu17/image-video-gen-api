@@ -1,0 +1,268 @@
+{
+  "info": {
+    "_postman_id": "c7a8b9e0-1234-5678-9abc-vertexgenai01",
+    "name": "Vertex AI Image & Video Generation API",
+    "description": "Postman collection for testing the Vertex AI Image (Imagen 3) and Video (Veo) Generation REST API with GCP Service Account authentication.\n\n### Authentication Instructions\n1. Generate a Google OAuth2 Access Token using the GCP CLI:\n   ```bash\n   gcloud auth print-access-token\n   ```\n   Or generate an Identity Token:\n   ```bash\n   gcloud auth print-identity-token\n   ```\n2. Set the token into the collection variable `bearerToken` or environment variable `bearerToken`.\n3. Alternatively, if `API_KEY` is configured on the server, set `apiKey`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "bearerToken",
+      "value": "YOUR_GCP_SERVICE_ACCOUNT_TOKEN",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "operation_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{bearerToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health & Monitoring",
+      "description": "Endpoints to check server liveness and Vertex AI readiness.",
+      "item": [
+        {
+          "name": "Liveness Probe (Healthz)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/healthz",
+              "host": ["{{baseUrl}}"],
+              "path": ["healthz"]
+            },
+            "description": "Returns 200 OK with timestamp if the server is healthy."
+          },
+          "response": []
+        },
+        {
+          "name": "Readiness Probe (Readyz)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/readyz",
+              "host": ["{{baseUrl}}"],
+              "path": ["readyz"]
+            },
+            "description": "Checks GCP Project configuration and Vertex AI client readiness."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Image Generation (Imagen 3)",
+      "description": "Endpoints for text-to-image generation using Google Vertex AI Imagen 3.",
+      "item": [
+        {
+          "name": "Generate Image (Default Square 1:1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"A high-detail cinematic macro photograph of a dew drop on a lotus leaf reflecting a starry galaxy at twilight\",\n  \"negative_prompt\": \"blurry, low quality, distorted, watermark\",\n  \"aspect_ratio\": \"1:1\",\n  \"number_of_images\": 1,\n  \"output_mime_type\": \"image/png\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/images/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "images", "generate"]
+            },
+            "description": "Generates a single 1:1 square image and returns base64-encoded PNG data."
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Image (Widescreen 16:9)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"An epic panoramic concept art of a futuristic cyber city built into towering red rock canyons with illuminated hover vehicles\",\n  \"negative_prompt\": \"oversaturated, cartoon, sketch\",\n  \"aspect_ratio\": \"16:9\",\n  \"number_of_images\": 1,\n  \"output_mime_type\": \"image/png\",\n  \"person_generation\": \"allow_adult\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/images/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "images", "generate"]
+            },
+            "description": "Generates a 16:9 widescreen landscape concept art image."
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Image (Portrait 9:16)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"A full-length fashion editorial photograph of an astronaut in an iridescent streetwear spacesuit standing under neon lights in Tokyo rain\",\n  \"aspect_ratio\": \"9:16\",\n  \"number_of_images\": 1,\n  \"output_mime_type\": \"image/jpeg\",\n  \"person_generation\": \"allow_adult\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/images/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "images", "generate"]
+            },
+            "description": "Generates a 9:16 vertical portrait formatted image."
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Multiple Images (Batch of 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Watercolor illustration of an ancient cozy bookstore hidden in a European alleyway with cats on windowsills\",\n  \"aspect_ratio\": \"4:3\",\n  \"number_of_images\": 2,\n  \"output_mime_type\": \"image/png\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/images/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "images", "generate"]
+            },
+            "description": "Generates a batch of 2 images with 4:3 aspect ratio."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Video Generation (Veo)",
+      "description": "Endpoints for text-to-video generation using Google Vertex AI Veo.",
+      "item": [
+        {
+          "name": "Generate Video (Async - Standard)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 202) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.operation_id) {",
+                  "        pm.collectionVariables.set('operation_id', json.operation_id);",
+                  "        console.log('Saved operation_id:', json.operation_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Cinematic aerial drone flight gliding over a tropical emerald coastline with crashing turquoise waves at sunset, 4k resolution\",\n  \"aspect_ratio\": \"16:9\",\n  \"duration_seconds\": 5,\n  \"fps\": 24,\n  \"wait_for_completion\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/videos/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "videos", "generate"]
+            },
+            "description": "Submits an asynchronous video generation job. Returns 202 Accepted and saves the `operation_id` to collection variables automatically."
+          },
+          "response": []
+        },
+        {
+          "name": "Poll Video Operation Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/videos/operations/{{operation_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "videos", "operations", "{{operation_id}}"]
+            },
+            "description": "Polls the status of the video generation operation. When complete, returns status `COMPLETED` and the video URI or base64 stream."
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Video (Synchronous Wait)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"A calm hyperlapse of clouds swirling over snowy mountain peaks under a clear blue sky\",\n  \"aspect_ratio\": \"16:9\",\n  \"duration_seconds\": 5,\n  \"wait_for_completion\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/videos/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "videos", "generate"]
+            },
+            "description": "Submits a video generation job and instructs the server to wait/poll until completion before responding."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
