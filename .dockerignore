@@ -1,0 +1,57 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing & cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Secrets and local configurations - DO NOT INCLUDE IN IMAGE
+.env
+.env.*
+!.env.example
+service-account*.json
+*.pem
+*.key
+
+# Temporary / Scratch files
+scratch/
+test_*.png
+output_*.jpg
+output_*.png
+ping_*.png
