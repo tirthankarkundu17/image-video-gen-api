@@ -259,3 +259,26 @@ docker run -p 8000:8000 \
   -e GCP_SERVICE_ACCOUNT_FILE="/app/service-account-key.json" \
   vertex-image-video-api:latest
 ```
+
+---
+
+## CI/CD & Automated Docker Hub Deployment
+
+An automated GitHub Actions workflow is set up at [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml) to run tests and push multi-architecture Docker images (`linux/amd64`, `linux/arm64`) directly to Docker Hub.
+
+### 1. Configure GitHub Secrets
+
+Navigate to your GitHub repository: **Settings** &rarr; **Secrets and variables** &rarr; **Actions** and add the following repository secrets:
+
+| Secret Name | Description |
+|---|---|
+| `DOCKERHUB_USERNAME` | Your Docker Hub username or organization |
+| `DOCKERHUB_TOKEN` | Docker Hub Personal Access Token (PAT) with `Read & Write` access |
+
+### 2. Workflow Trigger Behavior
+
+- **Push to `main` or `dev`**: Runs tests, builds the multi-platform image, and tags with branch name (`main`, `dev`) and `:latest` (for `main`).
+- **Git Tags (`v*.*.*`)**: Builds and tags the image with the release version (e.g. `:v1.0.0`, `:1.0`, `:1`).
+- **Pull Requests to `main`**: Runs the full test suite and verifies that the Docker image builds cleanly across all target architectures (without pushing).
+- **Manual Trigger (`workflow_dispatch`)**: Can be manually run from the GitHub Actions tab with an optional custom tag.
+
