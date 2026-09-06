@@ -1,4 +1,5 @@
 import logging
+import mimetypes
 from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from google import genai
@@ -20,6 +21,35 @@ from app.services.vertex_client import get_vertex_client
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/images", tags=["Image Generation"])
+
+ALLOWED_IMAGE_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+
+
+def _resolve_image_mime_type(
+    content_type: Optional[str], filename: Optional[str], data: bytes
+) -> Optional[str]:
+    """
+    Resolves image MIME type by checking the HTTP Content-Type header,
+    falling back to filename extension, and finally inspecting magic bytes.
+    """
+    if content_type and content_type.lower() in ALLOWED_IMAGE_MIME_TYPES:
+        return content_type.lower()
+
+    if filename:
+        guessed, _ = mimetypes.guess_type(filename)
+        if guessed and guessed.lower() in ALLOWED_IMAGE_MIME_TYPES:
+            return guessed.lower()
+
+    if data.startswith(b"\x89PNG"):
+        return "image/png"
+    if data.startswith(b"\xff\xd8"):
+        return "image/jpeg"
+    if data.startswith(b"GIF8"):
+        return "image/gif"
+    if data.startswith(b"RIFF") and len(data) >= 12 and data[8:12] == b"WEBP":
+        return "image/webp"
+
+    return None
 
 
 @router.post(
@@ -121,19 +151,22 @@ async def generate_images_from_image_endpoint(
     client: genai.Client = Depends(get_vertex_client),
     settings: Settings = Depends(get_settings),
 ) -> ImageGenerationResponse:
-    allowed_mime_types = {"image/jpeg", "image/png", "image/webp", "image/gif"}
-    content_type = (image.content_type or "").lower()
-    if content_type not in allowed_mime_types:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported image type: '{content_type}'. Supported types: {sorted(list(allowed_mime_types))}",
-        )
-
     image_bytes = await image.read()
     if not image_bytes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Uploaded image file is empty.",
+        )
+
+    resolved_mime_type = _resolve_image_mime_type(image.content_type, image.filename, image_bytes)
+    if not resolved_mime_type:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Unsupported image type: '{image.content_type}'. "
+                f"Could not infer a valid image format from filename or content. "
+                f"Supported types: {sorted(list(ALLOWED_IMAGE_MIME_TYPES))}"
+            ),
         )
 
     logger.info(
@@ -142,13 +175,13 @@ async def generate_images_from_image_endpoint(
         principal.auth_type,
         prompt,
         len(image_bytes),
-        content_type,
+        resolved_mime_type,
     )
 
     return generate_images_with_image_input(
         prompt=prompt,
         image_bytes=image_bytes,
-        image_mime_type=content_type,
+        image_mime_type=resolved_mime_type,
         client=client,
         settings=settings,
         model=model,

@@ -252,11 +252,47 @@ def test_generate_from_image_unsupported_mime(client, auth_headers):
     response = client.post(
         "/api/v1/images/generate-from-image",
         data={"prompt": "Some prompt"},
-        files={"image": ("test.txt", b"plain text content", "text/plain")},
+        files={"image": ("test.txt", b"plain text content that is not an image", "text/plain")},
         headers=auth_headers,
     )
     assert response.status_code == 400
     assert "Unsupported image type" in response.json()["detail"]
+
+
+def test_generate_from_image_octet_stream_fallback_by_filename(client, auth_headers, mock_vertex_client):
+    mock_part = MagicMock()
+    mock_part.inline_data.data = b"output"
+    mock_part.inline_data.mime_type = "image/png"
+    mock_vertex_client.models.generate_content.return_value = MagicMock(
+        candidates=[MagicMock(content=MagicMock(parts=[mock_part]))]
+    )
+
+    # Client sent application/octet-stream, but filename is photo.png
+    response = client.post(
+        "/api/v1/images/generate-from-image",
+        data={"prompt": "Turn into art"},
+        files={"image": ("photo.png", b"\x89PNG\r\n\x1a\nsomedata", "application/octet-stream")},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+
+
+def test_generate_from_image_octet_stream_fallback_by_magic_bytes(client, auth_headers, mock_vertex_client):
+    mock_part = MagicMock()
+    mock_part.inline_data.data = b"output"
+    mock_part.inline_data.mime_type = "image/jpeg"
+    mock_vertex_client.models.generate_content.return_value = MagicMock(
+        candidates=[MagicMock(content=MagicMock(parts=[mock_part]))]
+    )
+
+    # Client sent application/octet-stream with no extension in filename, but JPEG magic header
+    response = client.post(
+        "/api/v1/images/generate-from-image",
+        data={"prompt": "Turn into art"},
+        files={"image": ("blob", b"\xff\xd8\xff\xe0rawjpegbytes", "application/octet-stream")},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
 
 
 def test_generate_from_image_empty_file(client, auth_headers):
