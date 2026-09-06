@@ -175,3 +175,153 @@ def test_generate_image_gemini_model_success(client, auth_headers, mock_vertex_c
     assert data["images"][0]["mime_type"] == "image/jpeg"
     assert base64.b64decode(data["images"][0]["base64_data"]) == fake_jpeg_bytes
 
+
+def test_generate_from_image_gemini_success(client, auth_headers, mock_vertex_client):
+    fake_png_bytes = b"\x89PNG\r\n\x1a\noutputimage"
+    mock_part = MagicMock()
+    mock_part.inline_data.data = fake_png_bytes
+    mock_part.inline_data.mime_type = "image/png"
+
+    mock_candidate = MagicMock()
+    mock_candidate.content.parts = [mock_part]
+
+    mock_vertex_client.models.generate_content.return_value = MagicMock(
+        candidates=[mock_candidate]
+    )
+
+    response = client.post(
+        "/api/v1/images/generate-from-image",
+        data={
+            "prompt": "Turn this into anime art",
+            "aspect_ratio": "16:9",
+        },
+        files={
+            "image": ("input.png", b"\x89PNG\r\n\x1a\ninputdata", "image/png")
+        },
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["model"] == "gemini-2.0-flash"
+    assert data["prompt"] == "Turn this into anime art"
+    assert len(data["images"]) == 1
+    assert data["images"][0]["mime_type"] == "image/png"
+    assert base64.b64decode(data["images"][0]["base64_data"]) == fake_png_bytes
+
+
+def test_generate_from_image_imagen_success(client, auth_headers, mock_vertex_client):
+    fake_png_bytes = b"\x89PNG\r\n\x1a\noutputfromedit"
+    mock_img = MagicMock()
+    mock_img.image.image_bytes = fake_png_bytes
+    mock_img.image.mime_type = "image/png"
+
+    mock_vertex_client.models.edit_image.return_value = MagicMock(
+        generated_images=[mock_img]
+    )
+
+    response = client.post(
+        "/api/v1/images/generate-from-image",
+        data={
+            "prompt": "Add sunglasses to the person in this photo",
+            "model": "imagen-3.0-capability-002",
+        },
+        files={
+            "image": ("person.jpeg", b"\xff\xd8\xff\xe0inputdata", "image/jpeg")
+        },
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["model"] == "imagen-3.0-capability-002"
+    assert len(data["images"]) == 1
+    assert base64.b64decode(data["images"][0]["base64_data"]) == fake_png_bytes
+
+
+def test_generate_from_image_missing_file(client, auth_headers):
+    response = client.post(
+        "/api/v1/images/generate-from-image",
+        data={"prompt": "Prompt without image"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 422
+
+
+def test_generate_from_image_unsupported_mime(client, auth_headers):
+    response = client.post(
+        "/api/v1/images/generate-from-image",
+        data={"prompt": "Some prompt"},
+        files={"image": ("test.txt", b"plain text content", "text/plain")},
+        headers=auth_headers,
+    )
+    assert response.status_code == 400
+    assert "Unsupported image type" in response.json()["detail"]
+
+
+def test_generate_from_image_empty_file(client, auth_headers):
+    response = client.post(
+        "/api/v1/images/generate-from-image",
+        data={"prompt": "Some prompt"},
+        files={"image": ("empty.png", b"", "image/png")},
+        headers=auth_headers,
+    )
+    assert response.status_code == 400
+    assert "Uploaded image file is empty" in response.json()["detail"]
+
+
+def test_generate_from_image_vertex_api_error(client, auth_headers, mock_vertex_client):
+    mock_vertex_client.models.generate_content.side_effect = genai_errors.APIError(
+        code=400, response_json={"message": "Resource exhausted"}
+    )
+
+    response = client.post(
+        "/api/v1/images/generate-from-image",
+        data={"prompt": "Test error prompt"},
+        files={"image": ("input.png", b"\x89PNG\r\n\x1a\ntest", "image/png")},
+        headers=auth_headers,
+    )
+    assert response.status_code == 502
+    assert "Vertex AI API error" in response.json()["detail"]
+
+
+def test_generate_from_image_with_gcs_upload_success(client, auth_headers, mock_vertex_client):
+    from unittest.mock import patch
+
+    fake_png_bytes = b"\x89PNG\r\n\x1a\noutput"
+    mock_part = MagicMock()
+    mock_part.inline_data.data = fake_png_bytes
+    mock_part.inline_data.mime_type = "image/png"
+
+    mock_candidate = MagicMock()
+    mock_candidate.content.parts = [mock_part]
+    mock_vertex_client.models.generate_content.return_value = MagicMock(
+        candidates=[mock_candidate]
+    )
+
+    with patch("app.services.image_service.upload_image_bytes") as mock_upload:
+        mock_upload.return_value = (
+            "gs://my-bucket/generated-images/edit_1.png",
+            "https://storage.googleapis.com/my-bucket/generated-images/edit_1.png",
+        )
+
+        response = client.post(
+            "/api/v1/images/generate-from-image",
+            data={
+                "prompt": "Colorize this photo",
+                "upload_to_gcs": "true",
+                "gcs_bucket": "my-bucket",
+                "include_base64": "false",
+            },
+            files={"image": ("bw.png", b"\x89PNG\r\n\x1a\ntest", "image/png")},
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["images"]) == 1
+        assert data["images"][0]["gcs_uri"] == "gs://my-bucket/generated-images/edit_1.png"
+        assert data["images"][0]["base64_data"] is None
+        mock_upload.assert_called_once()
+
+
