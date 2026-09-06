@@ -29,6 +29,34 @@ def generate_images(
     Generates images using Vertex AI (Gemini multimodal or Imagen models),
     with optional automated upload to Google Cloud Storage.
     """
+    # Option 3: If input_image_base64 is provided in JSON payload, route to generate_images_with_image_input
+    if request.input_image_base64:
+        try:
+            input_bytes = base64.b64decode(request.input_image_base64)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid base64 encoding in 'input_image_base64': {str(exc)}",
+            )
+        return generate_images_with_image_input(
+            prompt=request.prompt,
+            image_bytes=input_bytes,
+            image_mime_type=request.input_mime_type or "image/png",
+            client=client,
+            settings=settings,
+            model=request.model or "gemini-3.1-flash-lite-image",
+            negative_prompt=request.negative_prompt,
+            aspect_ratio=request.aspect_ratio,
+            number_of_images=request.number_of_images,
+            output_mime_type=request.output_mime_type,
+            person_generation=request.person_generation,
+            safety_filter_level=request.safety_filter_level,
+            upload_to_gcs=request.upload_to_gcs,
+            gcs_bucket=request.gcs_bucket,
+            gcs_path_prefix=request.gcs_path_prefix,
+            include_base64=request.include_base64,
+        )
+
     model_name = request.model or settings.DEFAULT_IMAGE_MODEL
 
     # Fail fast if upload_to_gcs is requested but no bucket is available
@@ -247,7 +275,7 @@ def generate_images_with_image_input(
                 ),
             )
 
-    model_name = model or "gemini-2.0-flash"
+    model_name = model or "gemini-3.1-flash-lite-image"
     extracted_images: List[tuple[bytes, str]] = []
 
     if "gemini" in model_name.lower():

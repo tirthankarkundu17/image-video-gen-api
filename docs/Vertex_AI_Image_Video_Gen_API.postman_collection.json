@@ -233,6 +233,138 @@
       ]
     },
     {
+      "name": "Image-to-Image Generation (Image Prompted)",
+      "description": "Endpoints and options for generating or modifying images conditioned on an input reference image using Vertex AI.",
+      "item": [
+        {
+          "name": "Option 1: Multipart with Individual Form Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "",
+                  "description": "Upload reference image (PNG, JPEG, WEBP)"
+                },
+                {
+                  "key": "prompt",
+                  "value": "Professional corporate executive headshot of the person in the reference image. Maintain identical facial structure, features, eye color, and natural likeness. Dressed in a tailored navy blue blazer with a crisp white dress shirt. Posed with a confident warm smile facing camera. 85mm portrait lens, shallow depth of field, soft modern office bokeh background. Studio lighting, natural skin texture, 8k resolution.",
+                  "type": "text"
+                },
+                {
+                  "key": "negative_prompt",
+                  "value": "cartoon, 3d render, illustration, distorted face, bad eyes, plastic skin, blurry",
+                  "type": "text"
+                },
+                {
+                  "key": "model",
+                  "value": "gemini-3.1-flash-lite-image",
+                  "type": "text"
+                },
+                {
+                  "key": "aspect_ratio",
+                  "value": "3:4",
+                  "type": "text"
+                },
+                {
+                  "key": "number_of_images",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "include_base64",
+                  "value": "true",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/images/generate-from-image",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "images", "generate-from-image"]
+            },
+            "description": "Option 1: Uploads a binary image file alongside individual multipart form-data text fields (prompt, model, aspect_ratio, etc.)."
+          },
+          "response": []
+        },
+        {
+          "name": "Option 2: Multipart with Image File + JSON Parameters String",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "",
+                  "description": "Upload reference image (PNG, JPEG, WEBP)"
+                },
+                {
+                  "key": "request_data",
+                  "value": "{\n  \"prompt\": \"Professional corporate executive headshot of the person in the reference image. Maintain identical facial structure, features, and likeness. Dressed in a tailored navy blue blazer. Soft modern office bokeh background, studio lighting, natural skin texture, 8k resolution.\",\n  \"negative_prompt\": \"cartoon, illustration, distorted face, plastic skin, blurry\",\n  \"model\": \"gemini-3.1-flash-lite-image\",\n  \"aspect_ratio\": \"3:4\",\n  \"number_of_images\": 1,\n  \"upload_to_gcs\": false,\n  \"include_base64\": true\n}",
+                  "type": "text",
+                  "description": "JSON string containing all generation parameters"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/images/generate-from-image",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "images", "generate-from-image"]
+            },
+            "description": "Option 2: Uploads a binary image file alongside a single 'request_data' JSON string containing generation parameters."
+          },
+          "response": []
+        },
+        {
+          "name": "Option 3: Pure JSON with Base64 Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Professional corporate executive headshot of the person in the reference image. Maintain identical facial structure, features, and likeness. Dressed in a tailored navy blue blazer. Soft modern office bokeh background, studio lighting, natural skin texture, 8k resolution.\",\n  \"input_image_base64\": \"<PASTE_BASE64_STRING_HERE>\",\n  \"input_mime_type\": \"image/jpeg\",\n  \"negative_prompt\": \"cartoon, illustration, distorted face, plastic skin, blurry\",\n  \"model\": \"gemini-3.1-flash-lite-image\",\n  \"aspect_ratio\": \"3:4\",\n  \"number_of_images\": 1,\n  \"upload_to_gcs\": false,\n  \"include_base64\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/images/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "images", "generate"]
+            },
+            "description": "Option 3: Pure application/json payload with Base64-encoded image data sent to /api/v1/images/generate."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Video Generation (Veo)",
       "description": "Endpoints for text-to-video generation using Google Vertex AI Veo.",
       "item": [

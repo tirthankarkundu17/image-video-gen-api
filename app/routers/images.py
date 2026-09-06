@@ -1,3 +1,4 @@
+import json
 import logging
 import mimetypes
 from typing import Optional
@@ -93,16 +94,19 @@ async def generate_images_from_image_endpoint(
         ...,
         description="Input reference/conditioning image file (PNG, JPEG, WEBP, GIF)",
     ),
-    prompt: str = Form(
-        ...,
-        min_length=1,
+    prompt: Optional[str] = Form(
+        default=None,
         max_length=2000,
-        description="Text description or instruction to generate/edit the image",
+        description="Text description or instruction to generate/edit the image (required if not passed inside request_data JSON)",
         examples=["Transform this photo into an oil painting in the style of Van Gogh"],
+    ),
+    request_data: Optional[str] = Form(
+        default=None,
+        description="Optional JSON string of generation parameters (Option 2: multipart with JSON payload)",
     ),
     model: Optional[str] = Form(
         default=None,
-        description="Vertex AI model identifier (defaults to gemini-2.0-flash)",
+        description="Vertex AI model identifier (defaults to gemini-3.1-flash-lite-image)",
     ),
     negative_prompt: Optional[str] = Form(
         default=None,
@@ -151,6 +155,39 @@ async def generate_images_from_image_endpoint(
     client: genai.Client = Depends(get_vertex_client),
     settings: Settings = Depends(get_settings),
 ) -> ImageGenerationResponse:
+    parsed_json = {}
+    if request_data:
+        try:
+            parsed_json = json.loads(request_data)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid JSON string in 'request_data': {str(exc)}",
+            )
+
+    effective_prompt = prompt or parsed_json.get("prompt")
+    if not effective_prompt or not effective_prompt.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="'prompt' is required, either as a direct form field or inside 'request_data' JSON.",
+        )
+
+    effective_model = model or parsed_json.get("model")
+    effective_negative_prompt = negative_prompt or parsed_json.get("negative_prompt")
+    effective_aspect_ratio = (
+        parsed_json.get("aspect_ratio", aspect_ratio)
+        if aspect_ratio == "1:1" and "aspect_ratio" in parsed_json
+        else aspect_ratio
+    )
+    effective_number_of_images = parsed_json.get("number_of_images", number_of_images)
+    effective_output_mime_type = parsed_json.get("output_mime_type", output_mime_type)
+    effective_person_generation = person_generation or parsed_json.get("person_generation")
+    effective_safety_filter_level = safety_filter_level or parsed_json.get("safety_filter_level")
+    effective_upload_to_gcs = parsed_json.get("upload_to_gcs", upload_to_gcs)
+    effective_gcs_bucket = gcs_bucket or parsed_json.get("gcs_bucket")
+    effective_gcs_path_prefix = gcs_path_prefix or parsed_json.get("gcs_path_prefix")
+    effective_include_base64 = parsed_json.get("include_base64", include_base64)
+
     image_bytes = await image.read()
     if not image_bytes:
         raise HTTPException(
@@ -173,27 +210,27 @@ async def generate_images_from_image_endpoint(
         "Image-conditioned generation requested by caller=%s (auth_type=%s) for prompt: '%s' (image_size=%d bytes, mime=%s)",
         principal.email or principal.identifier,
         principal.auth_type,
-        prompt,
+        effective_prompt,
         len(image_bytes),
         resolved_mime_type,
     )
 
     return generate_images_with_image_input(
-        prompt=prompt,
+        prompt=effective_prompt,
         image_bytes=image_bytes,
         image_mime_type=resolved_mime_type,
         client=client,
         settings=settings,
-        model=model,
-        negative_prompt=negative_prompt,
-        aspect_ratio=aspect_ratio,
-        number_of_images=number_of_images,
-        output_mime_type=output_mime_type,
-        person_generation=person_generation,
-        safety_filter_level=safety_filter_level,
-        upload_to_gcs=upload_to_gcs,
-        gcs_bucket=gcs_bucket,
-        gcs_path_prefix=gcs_path_prefix,
-        include_base64=include_base64,
+        model=effective_model,
+        negative_prompt=effective_negative_prompt,
+        aspect_ratio=effective_aspect_ratio,
+        number_of_images=effective_number_of_images,
+        output_mime_type=effective_output_mime_type,
+        person_generation=effective_person_generation,
+        safety_filter_level=effective_safety_filter_level,
+        upload_to_gcs=effective_upload_to_gcs,
+        gcs_bucket=effective_gcs_bucket,
+        gcs_path_prefix=effective_gcs_path_prefix,
+        include_base64=effective_include_base64,
     )
 

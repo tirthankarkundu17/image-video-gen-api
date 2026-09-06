@@ -203,7 +203,7 @@ def test_generate_from_image_gemini_success(client, auth_headers, mock_vertex_cl
 
     assert response.status_code == 200
     data = response.json()
-    assert data["model"] == "gemini-2.0-flash"
+    assert data["model"] == "gemini-3.1-flash-lite-image"
     assert data["prompt"] == "Turn this into anime art"
     assert len(data["images"]) == 1
     assert data["images"][0]["mime_type"] == "image/png"
@@ -359,5 +359,59 @@ def test_generate_from_image_with_gcs_upload_success(client, auth_headers, mock_
         assert data["images"][0]["gcs_uri"] == "gs://my-bucket/generated-images/edit_1.png"
         assert data["images"][0]["base64_data"] is None
         mock_upload.assert_called_once()
+
+
+def test_generate_from_image_option2_json_in_multipart(client, auth_headers, mock_vertex_client):
+    mock_part = MagicMock()
+    mock_part.inline_data.data = b"outputoption2"
+    mock_part.inline_data.mime_type = "image/png"
+
+    mock_vertex_client.models.generate_content.return_value = MagicMock(
+        candidates=[MagicMock(content=MagicMock(parts=[mock_part]))]
+    )
+
+    # Option 2: Image file + request_data JSON string
+    response = client.post(
+        "/api/v1/images/generate-from-image",
+        data={
+            "request_data": '{"prompt": "Option 2 JSON prompt", "aspect_ratio": "4:3", "model": "gemini-3.1-flash-lite-image"}'
+        },
+        files={"image": ("input.png", b"\x89PNG\r\n\x1a\ntest", "image/png")},
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["prompt"] == "Option 2 JSON prompt"
+    assert data["model"] == "gemini-3.1-flash-lite-image"
+
+
+def test_generate_image_option3_base64_json(client, auth_headers, mock_vertex_client):
+    mock_part = MagicMock()
+    mock_part.inline_data.data = b"outputoption3"
+    mock_part.inline_data.mime_type = "image/png"
+
+    mock_vertex_client.models.generate_content.return_value = MagicMock(
+        candidates=[MagicMock(content=MagicMock(parts=[mock_part]))]
+    )
+
+    # Option 3: Pure JSON with input_image_base64
+    fake_b64 = base64.b64encode(b"\x89PNG\r\n\x1a\nbase64input").decode("utf-8")
+    response = client.post(
+        "/api/v1/images/generate",
+        json={
+            "prompt": "Option 3 Pure JSON prompt",
+            "input_image_base64": fake_b64,
+            "input_mime_type": "image/png",
+            "model": "gemini-3.1-flash-lite-image",
+            "aspect_ratio": "1:1",
+        },
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["prompt"] == "Option 3 Pure JSON prompt"
+    assert data["model"] == "gemini-3.1-flash-lite-image"
 
 
