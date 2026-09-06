@@ -52,8 +52,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/healthz",
-              "host": ["{{baseUrl}}"],
-              "path": ["healthz"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "healthz"
+              ]
             },
             "description": "Returns 200 OK with timestamp if the server is healthy."
           },
@@ -69,8 +73,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/readyz",
-              "host": ["{{baseUrl}}"],
-              "path": ["readyz"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "readyz"
+              ]
             },
             "description": "Checks GCP Project configuration and Vertex AI client readiness."
           },
@@ -93,12 +101,24 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"bucket\": \"\",\n  \"path_prefix\": \"test-uploads\"\n}"
+              "raw": "{\n  \"bucket\": \"\",\n  \"path_prefix\": \"test-uploads\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/storage/test-upload",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "storage", "test-upload"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "storage",
+                "test-upload"
+              ]
             },
             "description": "Uploads a tiny 1x1 test image to verify Google Cloud Storage bucket existence, permissions, and connectivity without calling AI models."
           },
@@ -127,12 +147,24 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"prompt\": \"A high-detail cinematic macro photograph of a dew drop on a lotus leaf reflecting a starry galaxy at twilight\",\n  \"negative_prompt\": \"blurry, low quality, distorted, watermark\",\n  \"aspect_ratio\": \"1:1\",\n  \"number_of_images\": 1,\n  \"output_mime_type\": \"image/png\"\n}"
+              "raw": "{\n  \"prompt\": \"A high-detail cinematic macro photograph of a dew drop on a lotus leaf reflecting a starry galaxy at twilight\",\n  \"negative_prompt\": \"blurry, low quality, distorted, watermark\",\n  \"aspect_ratio\": \"1:1\",\n  \"number_of_images\": 1,\n  \"output_mime_type\": \"image/png\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/images/generate",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "images", "generate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "images",
+                "generate"
+              ]
             },
             "description": "Generates a single 1:1 square image and returns base64-encoded PNG data."
           },
@@ -150,12 +182,24 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"prompt\": \"An epic panoramic concept art of a futuristic cyber city built into towering red rock canyons with illuminated hover vehicles\",\n  \"negative_prompt\": \"oversaturated, cartoon, sketch\",\n  \"aspect_ratio\": \"16:9\",\n  \"number_of_images\": 1,\n  \"output_mime_type\": \"image/png\",\n  \"person_generation\": \"allow_adult\"\n}"
+              "raw": "{\n  \"prompt\": \"An epic panoramic concept art of a futuristic cyber city built into towering red rock canyons with illuminated hover vehicles\",\n  \"negative_prompt\": \"oversaturated, cartoon, sketch\",\n  \"aspect_ratio\": \"16:9\",\n  \"number_of_images\": 1,\n  \"output_mime_type\": \"image/png\",\n  \"person_generation\": \"allow_adult\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/images/generate",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "images", "generate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "images",
+                "generate"
+              ]
             },
             "description": "Generates a 16:9 widescreen landscape concept art image."
           },
@@ -173,12 +217,24 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"prompt\": \"A full-length fashion editorial photograph of an astronaut in an iridescent streetwear spacesuit standing under neon lights in Tokyo rain\",\n  \"aspect_ratio\": \"9:16\",\n  \"number_of_images\": 1,\n  \"output_mime_type\": \"image/jpeg\",\n  \"person_generation\": \"allow_adult\"\n}"
+              "raw": "{\n  \"prompt\": \"A full-length fashion editorial photograph of an astronaut in an iridescent streetwear spacesuit standing under neon lights in Tokyo rain\",\n  \"aspect_ratio\": \"9:16\",\n  \"number_of_images\": 1,\n  \"output_mime_type\": \"image/jpeg\",\n  \"person_generation\": \"allow_adult\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/images/generate",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "images", "generate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "images",
+                "generate"
+              ]
             },
             "description": "Generates a 9:16 vertical portrait formatted image."
           },
@@ -196,12 +252,24 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"prompt\": \"Watercolor illustration of an ancient cozy bookstore hidden in a European alleyway with cats on windowsills\",\n  \"aspect_ratio\": \"4:3\",\n  \"number_of_images\": 2,\n  \"output_mime_type\": \"image/png\"\n}"
+              "raw": "{\n  \"prompt\": \"Watercolor illustration of an ancient cozy bookstore hidden in a European alleyway with cats on windowsills\",\n  \"aspect_ratio\": \"4:3\",\n  \"number_of_images\": 2,\n  \"output_mime_type\": \"image/png\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/images/generate",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "images", "generate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "images",
+                "generate"
+              ]
             },
             "description": "Generates a batch of 2 images with 4:3 aspect ratio."
           },
@@ -219,12 +287,24 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"prompt\": \"A stunning isometric 3D render of a futuristic floating island with crystal waterfalls and tiny cabins\",\n  \"aspect_ratio\": \"1:1\",\n  \"number_of_images\": 1,\n  \"upload_to_gcs\": true,\n  \"gcs_bucket\": \"my-gcs-bucket-name\",\n  \"gcs_path_prefix\": \"generated-images\",\n  \"include_base64\": false\n}"
+              "raw": "{\n  \"prompt\": \"A stunning isometric 3D render of a futuristic floating island with crystal waterfalls and tiny cabins\",\n  \"aspect_ratio\": \"1:1\",\n  \"number_of_images\": 1,\n  \"upload_to_gcs\": true,\n  \"gcs_bucket\": \"my-gcs-bucket-name\",\n  \"gcs_path_prefix\": \"generated-images\",\n  \"include_base64\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/images/generate",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "images", "generate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "images",
+                "generate"
+              ]
             },
             "description": "Generates an image, uploads it directly to Google Cloud Storage (GCS), and returns the gs:// URI and storage URL."
           },
@@ -290,8 +370,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/images/generate-from-image",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "images", "generate-from-image"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "images",
+                "generate-from-image"
+              ]
             },
             "description": "Option 1: Uploads a binary image file alongside individual multipart form-data text fields (prompt, model, aspect_ratio, etc.)."
           },
@@ -321,14 +408,22 @@
                   "key": "request_data",
                   "value": "{\n  \"prompt\": \"Professional corporate executive headshot of the person in the reference image. Maintain identical facial structure, features, and likeness. Dressed in a tailored navy blue blazer. Soft modern office bokeh background, studio lighting, natural skin texture, 8k resolution.\",\n  \"negative_prompt\": \"cartoon, illustration, distorted face, plastic skin, blurry\",\n  \"model\": \"gemini-3.1-flash-lite-image\",\n  \"aspect_ratio\": \"3:4\",\n  \"number_of_images\": 1,\n  \"upload_to_gcs\": false,\n  \"include_base64\": true\n}",
                   "type": "text",
-                  "description": "JSON string containing all generation parameters"
+                  "description": "JSON string containing all generation parameters",
+                  "contentType": "application/json"
                 }
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/images/generate-from-image",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "images", "generate-from-image"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "images",
+                "generate-from-image"
+              ]
             },
             "description": "Option 2: Uploads a binary image file alongside a single 'request_data' JSON string containing generation parameters."
           },
@@ -351,12 +446,24 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"prompt\": \"Professional corporate executive headshot of the person in the reference image. Maintain identical facial structure, features, and likeness. Dressed in a tailored navy blue blazer. Soft modern office bokeh background, studio lighting, natural skin texture, 8k resolution.\",\n  \"input_image_base64\": \"<PASTE_BASE64_STRING_HERE>\",\n  \"input_mime_type\": \"image/jpeg\",\n  \"negative_prompt\": \"cartoon, illustration, distorted face, plastic skin, blurry\",\n  \"model\": \"gemini-3.1-flash-lite-image\",\n  \"aspect_ratio\": \"3:4\",\n  \"number_of_images\": 1,\n  \"upload_to_gcs\": false,\n  \"include_base64\": true\n}"
+              "raw": "{\n  \"prompt\": \"Professional corporate executive headshot of the person in the reference image. Maintain identical facial structure, features, and likeness. Dressed in a tailored navy blue blazer. Soft modern office bokeh background, studio lighting, natural skin texture, 8k resolution.\",\n  \"input_image_base64\": \"<PASTE_BASE64_STRING_HERE>\",\n  \"input_mime_type\": \"image/jpeg\",\n  \"negative_prompt\": \"cartoon, illustration, distorted face, plastic skin, blurry\",\n  \"model\": \"gemini-3.1-flash-lite-image\",\n  \"aspect_ratio\": \"3:4\",\n  \"number_of_images\": 1,\n  \"upload_to_gcs\": false,\n  \"include_base64\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/images/generate",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "images", "generate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "images",
+                "generate"
+              ]
             },
             "description": "Option 3: Pure application/json payload with Base64-encoded image data sent to /api/v1/images/generate."
           },
@@ -397,12 +504,24 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"prompt\": \"Cinematic aerial drone flight gliding over a tropical emerald coastline with crashing turquoise waves at sunset, 4k resolution\",\n  \"aspect_ratio\": \"16:9\",\n  \"duration_seconds\": 5,\n  \"fps\": 24,\n  \"wait_for_completion\": false\n}"
+              "raw": "{\n  \"prompt\": \"Cinematic aerial drone flight gliding over a tropical emerald coastline with crashing turquoise waves at sunset, 4k resolution\",\n  \"aspect_ratio\": \"16:9\",\n  \"duration_seconds\": 5,\n  \"fps\": 24,\n  \"wait_for_completion\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/videos/generate",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "videos", "generate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "videos",
+                "generate"
+              ]
             },
             "description": "Submits an asynchronous video generation job. Returns 202 Accepted and saves the `operation_id` to collection variables automatically."
           },
@@ -415,8 +534,16 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/videos/operations/{{operation_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "videos", "operations", "{{operation_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "videos",
+                "operations",
+                "{{operation_id}}"
+              ]
             },
             "description": "Polls the status of the video generation operation. When complete, returns status `COMPLETED` and the video URI or base64 stream."
           },
@@ -434,12 +561,24 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"prompt\": \"A calm hyperlapse of clouds swirling over snowy mountain peaks under a clear blue sky\",\n  \"aspect_ratio\": \"16:9\",\n  \"duration_seconds\": 5,\n  \"wait_for_completion\": true\n}"
+              "raw": "{\n  \"prompt\": \"A calm hyperlapse of clouds swirling over snowy mountain peaks under a clear blue sky\",\n  \"aspect_ratio\": \"16:9\",\n  \"duration_seconds\": 5,\n  \"wait_for_completion\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/videos/generate",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "videos", "generate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "videos",
+                "generate"
+              ]
             },
             "description": "Submits a video generation job and instructs the server to wait/poll until completion before responding."
           },
