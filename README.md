@@ -106,6 +106,11 @@ API_KEY=your-optional-dev-api-key
 ```
 
 ### 3. Start the API Server
+Using `make`:
+```bash
+make run-local
+```
+Or directly with `uv`:
 ```bash
 uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```

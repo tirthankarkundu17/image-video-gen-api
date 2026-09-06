@@ -67,6 +67,18 @@ class ImageGenerationRequest(BaseModel):
         default=True,
         description="Whether to include base64_data in response (can be set to false when upload_to_gcs=true to save bandwidth)",
     )
+    input_image_base64: Optional[str] = Field(
+        default=None,
+        description="Optional Base64-encoded reference image for image-conditioned generation (Option 3)",
+    )
+    input_image_gcs_uri: Optional[str] = Field(
+        default=None,
+        description="Optional Google Cloud Storage URI for reference image (e.g. gs://bucket/input.png)",
+    )
+    input_mime_type: Optional[str] = Field(
+        default="image/png",
+        description="MIME type of the input image when providing input_image_base64 or input_image_gcs_uri",
+    )
 
 
 class GeneratedImageData(BaseModel):

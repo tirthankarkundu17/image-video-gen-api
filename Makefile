@@ -14,6 +14,7 @@ TAG            ?= latest
 DOCKER_USER    ?=
 REGISTRY       ?=
 CONTAINER_NAME ?= image-video-gen-api-app
+HOST           ?= 0.0.0.0
 PORT           ?= 8000
 
 # Determine full target image name
@@ -28,7 +29,7 @@ else
     LATEST_IMAGE := $(IMAGE_NAME):latest
 endif
 
-.PHONY: all build push push-latest run stop logs clean login help
+.PHONY: all build push push-latest run run-local stop logs clean login help
 
 # Default target
 all: build push
@@ -36,20 +37,22 @@ all: build push
 ## help: Display this help message
 help:
 	@echo "========================================================================"
-	@echo " Docker Automation Makefile for $(IMAGE_NAME)"
+	@echo " Docker & Local Dev Automation Makefile for $(IMAGE_NAME)"
 	@echo "========================================================================"
 	@echo "Usage:"
-	@echo "  make build [DOCKER_USER=username] [TAG=version]"
-	@echo "  make push  [DOCKER_USER=username] [TAG=version]"
-	@echo "  make all   [DOCKER_USER=username] [TAG=version]  # build then push"
-	@echo "  make run   [PORT=8000]                           # run container locally"
-	@echo "  make stop                                        # stop running container"
+	@echo "  make build      [DOCKER_USER=username] [TAG=version]"
+	@echo "  make push       [DOCKER_USER=username] [TAG=version]"
+	@echo "  make all        [DOCKER_USER=username] [TAG=version]  # build then push"
+	@echo "  make run        [PORT=8000]                           # run container locally"
+	@echo "  make run-local  [HOST=0.0.0.0] [PORT=8000]            # run FastAPI dev server locally"
+	@echo "  make stop                                             # stop running container"
 	@echo ""
 	@echo "Targets:"
 	@echo "  build       Build the Docker image locally"
 	@echo "  push        Push image to Docker Hub / Registry (requires DOCKER_USER or REGISTRY)"
 	@echo "  push-latest Push both $(TAG) and :latest tags"
 	@echo "  run         Run the container with .env file mounted"
+	@echo "  run-local   Run FastAPI dev server locally via uv and uvicorn with hot reload"
 	@echo "  stop        Stop and remove the local container"
 	@echo "  logs        Follow container logs"
 	@echo "  login       Log into Docker Hub or custom registry"
@@ -91,6 +94,11 @@ ifneq ($(TAG),latest)
 	docker push $(LATEST_IMAGE)
 	@echo "==> Successfully pushed $(LATEST_IMAGE)"
 endif
+
+## run-local: Run FastAPI dev server locally via uv and uvicorn with hot reload
+run-local:
+	@echo "==> Starting local development server on $(HOST):$(PORT)..."
+	uv run uvicorn main:app --host $(HOST) --port $(PORT) --reload
 
 ## run: Run container locally with .env mounted and port forwarded
 run:
