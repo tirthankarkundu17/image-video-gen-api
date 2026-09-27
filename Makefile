@@ -17,6 +17,13 @@ CONTAINER_NAME ?= image-video-gen-api-app
 HOST           ?= 0.0.0.0
 PORT           ?= 8000
 
+# Base64 decoder options
+INPUT          ?=
+IN             ?= $(INPUT)
+OUTPUT         ?=
+OUT            ?= $(OUTPUT)
+DATA           ?=
+
 # Determine full target image name
 ifneq ($(REGISTRY),)
     FULL_IMAGE := $(REGISTRY)/$(IMAGE_NAME):$(TAG)
@@ -29,7 +36,18 @@ else
     LATEST_IMAGE := $(IMAGE_NAME):latest
 endif
 
-.PHONY: all build push push-latest run run-local stop logs clean login help
+# Build base64-to-file arguments
+B64_ARGS :=
+ifneq ($(strip $(DATA)),)
+    B64_ARGS += -d "$(DATA)"
+else ifneq ($(strip $(IN)),)
+    B64_ARGS += -i "$(IN)"
+endif
+ifneq ($(strip $(OUT)),)
+    B64_ARGS += -o "$(OUT)"
+endif
+
+.PHONY: all build push push-latest run run-local stop logs clean login help decode-base64 base64-to-file
 
 # Default target
 all: build push
@@ -40,23 +58,27 @@ help:
 	@echo " Docker & Local Dev Automation Makefile for $(IMAGE_NAME)"
 	@echo "========================================================================"
 	@echo "Usage:"
-	@echo "  make build      [DOCKER_USER=username] [TAG=version]"
-	@echo "  make push       [DOCKER_USER=username] [TAG=version]"
-	@echo "  make all        [DOCKER_USER=username] [TAG=version]  # build then push"
-	@echo "  make run        [PORT=8000]                           # run container locally"
-	@echo "  make run-local  [HOST=0.0.0.0] [PORT=8000]            # run FastAPI dev server locally"
-	@echo "  make stop                                             # stop running container"
+	@echo "  make build         [DOCKER_USER=username] [TAG=version]"
+	@echo "  make push          [DOCKER_USER=username] [TAG=version]"
+	@echo "  make all           [DOCKER_USER=username] [TAG=version]  # build then push"
+	@echo "  make run           [PORT=8000]                           # run container locally"
+	@echo "  make run-local     [HOST=0.0.0.0] [PORT=8000]            # run FastAPI dev server locally"
+	@echo "  make decode-base64 [INPUT=file] [OUTPUT=out.mp4]         # decode base64 file to media"
+	@echo "  make decode-base64 [DATA=b64] [OUTPUT=out.mp4]           # decode direct base64 string"
+	@echo "  make stop                                                # stop running container"
 	@echo ""
 	@echo "Targets:"
-	@echo "  build       Build the Docker image locally"
-	@echo "  push        Push image to Docker Hub / Registry (requires DOCKER_USER or REGISTRY)"
-	@echo "  push-latest Push both $(TAG) and :latest tags"
-	@echo "  run         Run the container with .env file mounted"
-	@echo "  run-local   Run FastAPI dev server locally via uv and uvicorn with hot reload"
-	@echo "  stop        Stop and remove the local container"
-	@echo "  logs        Follow container logs"
-	@echo "  login       Log into Docker Hub or custom registry"
-	@echo "  clean       Remove local built images"
+	@echo "  build          Build the Docker image locally"
+	@echo "  push           Push image to Docker Hub / Registry (requires DOCKER_USER or REGISTRY)"
+	@echo "  push-latest    Push both $(TAG) and :latest tags"
+	@echo "  run            Run the container with .env file mounted"
+	@echo "  run-local      Run FastAPI dev server locally via uv and uvicorn with hot reload"
+	@echo "  decode-base64  Decode base64 input file or string to video/image (alias: base64-to-file)"
+	@echo "  base64-to-file Alias for decode-base64"
+	@echo "  stop           Stop and remove the local container"
+	@echo "  logs           Follow container logs"
+	@echo "  login          Log into Docker Hub or custom registry"
+	@echo "  clean          Remove local built images"
 	@echo "========================================================================"
 
 ## login: Authenticate with Docker Registry
@@ -128,3 +150,12 @@ clean:
 	-docker rmi $(FULL_IMAGE)
 	-docker rmi $(LATEST_IMAGE)
 	@echo "==> Clean complete."
+
+## decode-base64: Convert base64 data or input file to binary file (video, image, etc.)
+decode-base64:
+	@echo "==> Decoding base64 to file..."
+	uv run python base64-to-file.py $(B64_ARGS)
+
+## base64-to-file: Alias for decode-base64
+base64-to-file: decode-base64
+

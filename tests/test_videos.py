@@ -166,3 +166,31 @@ def test_generate_video_synchronous_wait(client, auth_headers, mock_vertex_clien
     assert data["operation_id"] == op_name
     assert data["status"] == "COMPLETED"
     assert data["video_uri"] == "gs://my-bucket/generated_videos/sync_video.mp4"
+
+
+def test_resolve_video_client_global_fallback():
+    from app.config import Settings
+    from app.services.video_service import _resolve_video_client
+    from unittest.mock import patch
+
+    # Real Client-like object with _api_client
+    class DummyApiClient:
+        location = "global"
+
+    class DummyClient:
+        _api_client = DummyApiClient()
+
+    settings = Settings(
+        _env_file=None,
+        GCP_PROJECT_ID="test-proj",
+        GCP_LOCATION="global",
+        GCP_VIDEO_LOCATION=None,
+    )
+
+    with patch("app.services.video_service.get_vertex_client_for_location") as mock_get_client:
+        mock_regional_client = DummyClient()
+        mock_get_client.return_value = mock_regional_client
+
+        resolved = _resolve_video_client(DummyClient(), settings)
+        mock_get_client.assert_called_once_with("us-central1", settings)
+        assert resolved == mock_regional_client

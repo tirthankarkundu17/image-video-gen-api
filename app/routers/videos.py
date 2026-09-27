@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/v1/videos", tags=["Video Generation"])
     status_code=status.HTTP_202_ACCEPTED,
     summary="Generate videos using Vertex AI Veo",
     description=(
-        "Initiates a video generation job using Google Vertex AI (e.g., Veo - veo-2.0-generate-001). "
+        "Initiates a video generation job using Google Vertex AI (e.g., Veo - veo-3.1-generate-001). "
         "Returns a long-running operation ID for polling, or optionally waits until completion if "
         "'wait_for_completion=true'. Protected by GCP Service Account authentication."
     ),
@@ -53,10 +53,11 @@ def get_video_operation_endpoint(
     operation_id: str,
     principal: AuthenticatedPrincipal = Depends(get_current_principal),
     client: genai.Client = Depends(get_vertex_client),
+    settings: Settings = Depends(get_settings),
 ) -> VideoOperationResponse:
     logger.debug(
         "Operation status check requested by caller=%s for operation: '%s'",
         principal.email or principal.identifier,
         operation_id,
     )
-    return get_video_operation_status(operation_id=operation_id, client=client)
+    return get_video_operation_status(operation_id=operation_id, client=client, settings=settings)
