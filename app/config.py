@@ -55,8 +55,19 @@ class Settings(BaseSettings):
     GCS_IMAGE_BUCKET: Optional[str] = Field(
         default=None, description="Default Google Cloud Storage bucket for uploading generated images"
     )
+    GCS_VIDEO_BUCKET: Optional[str] = Field(
+        default=None,
+        description="Default Google Cloud Storage bucket for uploading/storing generated videos (falls back to GCS_IMAGE_BUCKET if not set)",
+    )
     GCS_PATH_PREFIX: str = Field(
         default="generated-images", description="Default GCS path prefix/folder"
+    )
+    GCS_VIDEO_PATH_PREFIX: str = Field(
+        default="generated-videos", description="Default GCS path prefix/folder for videos"
+    )
+    GCS_VIDEO_URL_EXPIRATION_MINUTES: int = Field(
+        default=30,
+        description="Expiration time in minutes for video GCS presigned download URLs (default 30 mins)",
     )
 
     # Server settings

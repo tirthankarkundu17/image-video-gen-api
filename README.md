@@ -178,7 +178,7 @@ curl -X POST "http://localhost:8000/api/v1/images/generate" \
 ### 3. Generate Videos (Veo)
 
 #### Asynchronous Mode (Default)
-Initiate generation and receive an operation tracking ID:
+Initiate generation and receive an operation tracking ID. You can optionally specify GCS bucket upload settings:
 
 **Endpoint:** `POST /api/v1/videos/generate`
 
@@ -191,7 +191,9 @@ curl -X POST "http://localhost:8000/api/v1/videos/generate" \
     "prompt": "Cinematic aerial drone flight gliding over a tropical emerald coastline at sunset",
     "aspect_ratio": "16:9",
     "duration_seconds": 5,
-    "wait_for_completion": false
+    "wait_for_completion": false,
+    "upload_to_gcs": true,
+    "gcs_bucket": "your-bucket-name"
   }'
 ```
 
@@ -203,6 +205,8 @@ curl -X POST "http://localhost:8000/api/v1/videos/generate" \
   "model": "veo-2.0-generate-001",
   "prompt": "Cinematic aerial drone flight gliding over a tropical emerald coastline at sunset",
   "video_uri": null,
+  "video_url": null,
+  "gcs_url": null,
   "video_base64": null,
   "created_at": "2026-09-04T17:30:00.000Z"
 }
@@ -223,12 +227,15 @@ curl -X GET "http://localhost:8000/api/v1/videos/operations/projects/YOUR_PROJEC
   "operation_id": "projects/YOUR_PROJECT_ID/locations/us-central1/publishers/google/models/veo-2.0-generate-001/operations/1234567890",
   "status": "COMPLETED",
   "model": "veo-2.0-generate-001",
-  "video_uri": "gs://your-bucket/generated_videos/video_output.mp4",
+  "video_uri": "gs://your-bucket-name/generated-videos/video_output.mp4",
+  "video_url": "https://storage.googleapis.com/your-bucket-name/generated-videos/video_output.mp4?X-Goog-Algorithm=GOOG4-RSA-SHA256&...",
+  "gcs_url": "https://storage.googleapis.com/your-bucket-name/generated-videos/video_output.mp4?X-Goog-Algorithm=GOOG4-RSA-SHA256&...",
   "mime_type": "video/mp4",
   "created_at": "2026-09-04T17:30:00.000Z",
   "updated_at": "2026-09-04T17:31:15.000Z"
 }
 ```
+*Note: `video_url` provides a presigned HTTPS URL valid for 30 minutes for direct downloading.*
 
 ---
 

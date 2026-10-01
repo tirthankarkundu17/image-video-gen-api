@@ -194,3 +194,134 @@ def test_resolve_video_client_global_fallback():
         resolved = _resolve_video_client(DummyClient(), settings)
         mock_get_client.assert_called_once_with("us-central1", settings)
         assert resolved == mock_regional_client
+
+
+def test_get_video_operation_status_completed_presigned_url(client, auth_headers, mock_vertex_client):
+    from unittest.mock import patch
+    op_name = "projects/123/locations/us-central1/publishers/google/models/veo/operations/op-signed"
+
+    mock_video = MagicMock()
+    mock_video.video.uri = "gs://my-bucket/generated_videos/video_signed.mp4"
+    mock_video.video.video_bytes = None
+    mock_video.video.mime_type = "video/mp4"
+
+    mock_op = MagicMock()
+    mock_op.name = op_name
+    mock_op.done = True
+    mock_op.error = None
+    mock_op.response.generated_videos = [mock_video]
+
+    mock_vertex_client.operations.get.return_value = mock_op
+
+    with patch("app.services.video_service.generate_signed_url_for_gcs_uri") as mock_sign:
+        mock_sign.return_value = "https://storage.googleapis.com/my-bucket/generated_videos/video_signed.mp4?signed=true&expires=1800"
+
+        response = client.get(
+            f"/api/v1/videos/operations/{op_name}",
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["operation_id"] == op_name
+        assert data["status"] == "COMPLETED"
+        assert data["video_uri"] == "gs://my-bucket/generated_videos/video_signed.mp4"
+        assert data["video_url"] == "https://storage.googleapis.com/my-bucket/generated_videos/video_signed.mp4?signed=true&expires=1800"
+        assert data["gcs_url"] == data["video_url"]
+        mock_sign.assert_called_once()
+        # Verify expiration_minutes was 30
+        call_kwargs = mock_sign.call_args.kwargs
+        assert call_kwargs.get("expiration_minutes") == 30
+
+
+def test_generate_video_upload_to_gcs_config(client, auth_headers, mock_vertex_client):
+    mock_op = MagicMock()
+    mock_op.name = "projects/123/locations/us-central1/publishers/google/models/veo/operations/op-gcs"
+    mock_op.done = False
+
+    mock_vertex_client.models.generate_videos.return_value = mock_op
+
+    payload = {
+        "prompt": "Majestic waterfall in a tropical rainforest",
+        "upload_to_gcs": True,
+        "gcs_bucket": "video-destination-bucket",
+        "gcs_path_prefix": "special-renders",
+    }
+
+    response = client.post(
+        "/api/v1/videos/generate",
+        json=payload,
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 202
+    call_kwargs = mock_vertex_client.models.generate_videos.call_args.kwargs
+    config = call_kwargs["config"]
+    assert config.output_gcs_uri is not None
+    assert config.output_gcs_uri.startswith("gs://video-destination-bucket/special-renders/")
+
+
+def test_generate_video_explicit_output_gcs_uri(client, auth_headers, mock_vertex_client):
+    mock_op = MagicMock()
+    mock_op.name = "projects/123/locations/us-central1/publishers/google/models/veo/operations/op-explicit"
+    mock_op.done = False
+
+    mock_vertex_client.models.generate_videos.return_value = mock_op
+
+    payload = {
+        "prompt": "City skyline time lapse at dusk",
+        "output_gcs_uri": "gs://custom-bucket/custom-dir/",
+    }
+
+    response = client.post(
+        "/api/v1/videos/generate",
+        json=payload,
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 202
+    call_kwargs = mock_vertex_client.models.generate_videos.call_args.kwargs
+    config = call_kwargs["config"]
+    assert config.output_gcs_uri == "gs://custom-bucket/custom-dir/"
+
+
+def test_generate_video_upload_missing_bucket(client, auth_headers):
+    # Neither request nor settings has GCS bucket configured
+    payload = {
+        "prompt": "A running horse in an open field",
+        "upload_to_gcs": True,
+    }
+
+    response = client.post(
+        "/api/v1/videos/generate",
+        json=payload,
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 400
+    assert "no GCS bucket was configured" in response.json()["detail"]
+
+
+def test_storage_generate_signed_url_30_mins():
+    from datetime import timedelta
+    from unittest.mock import patch, MagicMock
+    from app.services.storage_service import generate_signed_url_for_gcs_uri
+
+    mock_client = MagicMock()
+    mock_blob = MagicMock()
+    mock_client.bucket.return_value.blob.return_value = mock_blob
+    mock_blob.generate_signed_url.return_value = "https://storage.googleapis.com/test-bucket/vid.mp4?v4signed"
+
+    url = generate_signed_url_for_gcs_uri(
+        gcs_uri="gs://test-bucket/vid.mp4",
+        expiration_minutes=30,
+        storage_client=mock_client,
+    )
+
+    assert url == "https://storage.googleapis.com/test-bucket/vid.mp4?v4signed"
+    mock_blob.generate_signed_url.assert_called_once_with(
+        version="v4",
+        expiration=timedelta(minutes=30),
+        method="GET",
+    )
+
