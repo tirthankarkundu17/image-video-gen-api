@@ -232,6 +232,33 @@ curl -X GET "http://localhost:8000/api/v1/videos/operations/projects/YOUR_PROJEC
 
 ---
 
+## Decoding Base64 Outputs to Files (Video / Image)
+
+Responses from `/api/v1/images/generate` and `/api/v1/videos/generate` return base64 encoded data. You can decode base64 data directly into media files (`.mp4`, `.png`, `.jpg`, etc.) using the built-in utility via `make`:
+
+### 1. From a File Containing Base64 Data (e.g., `vid.txt`)
+```bash
+make decode-base64 INPUT=vid.txt OUTPUT=generated_video.mp4
+```
+*Short parameter aliases:*
+```bash
+make decode-base64 IN=vid.txt OUT=generated_video.mp4
+```
+
+### 2. From an Inline Base64 String
+```bash
+make decode-base64 DATA="AAAAHGZ0eXBtcDQy..." OUTPUT=output.mp4
+```
+
+### 3. Interactive Mode (Prompts for Input & Destination)
+```bash
+make decode-base64
+```
+
+> **Tip:** You can also use `make base64-to-file` as an alias for all the commands above, or invoke the script directly with `uv run python base64-to-file.py -i vid.txt -o output.mp4`.
+
+---
+
 ## Health Checks
 
 - **Liveness:** `GET /healthz` - Returns `{"status": "healthy", "version": "0.1.0", ...}`

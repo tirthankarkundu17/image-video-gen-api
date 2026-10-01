@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     # GCP / Vertex AI settings
     GCP_PROJECT_ID: Optional[str] = Field(default=None, description="Google Cloud Project ID")
     GCP_LOCATION: str = Field(default="us-central1", description="Vertex AI location/region")
+    GCP_VIDEO_LOCATION: Optional[str] = Field(
+        default=None,
+        description="Optional override location for video models (defaults to GCP_LOCATION, or us-central1 if GCP_LOCATION is global)",
+    )
     GCP_SERVICE_ACCOUNT_FILE: Optional[str] = Field(
         default=None, description="Path to GCP Service Account JSON key file"
     )
@@ -44,7 +48,7 @@ class Settings(BaseSettings):
         default="imagen-3.0-generate-002", description="Default Imagen model ID"
     )
     DEFAULT_VIDEO_MODEL: str = Field(
-        default="veo-2.0-generate-001", description="Default Veo model ID"
+        default="veo-3.1-generate-001", description="Default Veo model ID"
     )
 
     # Google Cloud Storage settings

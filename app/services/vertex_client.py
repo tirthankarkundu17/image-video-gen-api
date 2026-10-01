@@ -11,10 +11,14 @@ from app.config import Settings, get_settings
 logger = logging.getLogger(__name__)
 
 _cached_client: Optional[genai.Client] = None
+_cached_clients: dict[str, genai.Client] = {}
 _cached_project_id: Optional[str] = None
 
 
-def create_vertex_client(settings: Optional[Settings] = None) -> genai.Client:
+def create_vertex_client(
+    settings: Optional[Settings] = None,
+    location: Optional[str] = None,
+) -> genai.Client:
     """
     Creates a new Google Gen AI client configured for Vertex AI with Service Account credentials.
     """
@@ -28,10 +32,12 @@ def create_vertex_client(settings: Optional[Settings] = None) -> genai.Client:
             "Vertex AI API calls will require a valid project ID."
         )
 
+    target_location = location or settings.GCP_LOCATION
+
     client_kwargs = {
         "vertexai": True,
         "project": project_id or settings.GCP_PROJECT_ID,
-        "location": settings.GCP_LOCATION,
+        "location": target_location,
     }
 
     if credentials is not None:
@@ -61,7 +67,22 @@ def get_vertex_client(settings: Settings = Depends(get_settings)) -> genai.Clien
     return _cached_client
 
 
+def get_vertex_client_for_location(
+    location: str,
+    settings: Optional[Settings] = None,
+) -> genai.Client:
+    """
+    Returns a cached Vertex AI GenAI Client for a specific location.
+    """
+    global _cached_clients
+    settings = settings or get_settings()
+    if location not in _cached_clients:
+        _cached_clients[location] = create_vertex_client(settings, location=location)
+    return _cached_clients[location]
+
+
 def reset_vertex_client() -> None:
     """Resets the cached client (useful in tests or when settings reload)."""
-    global _cached_client
+    global _cached_client, _cached_clients
     _cached_client = None
+    _cached_clients.clear()

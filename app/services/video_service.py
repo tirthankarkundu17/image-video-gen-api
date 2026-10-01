@@ -10,10 +10,33 @@ from google import genai
 from google.genai import errors as genai_errors
 from google.genai import types
 
-from app.config import Settings
+from app.config import Settings, get_settings
 from app.schemas.video import VideoGenerationRequest, VideoOperationResponse
+from app.services.vertex_client import get_vertex_client_for_location
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_video_client(client: genai.Client, settings: Optional[Settings] = None) -> genai.Client:
+    """
+    Ensures that the client uses a valid regional location for Veo video models.
+    Vertex AI Veo models are not available under 'global' and require a regional endpoint (e.g. us-central1).
+    """
+    from unittest.mock import Mock
+
+    settings = settings or get_settings()
+    api_client = getattr(client, "_api_client", None)
+    if api_client is not None and not isinstance(api_client, Mock):
+        client_location = getattr(api_client, "location", None)
+        target_location = settings.GCP_VIDEO_LOCATION or "us-central1"
+        if client_location == "global" or (settings.GCP_VIDEO_LOCATION and client_location != settings.GCP_VIDEO_LOCATION):
+            logger.info(
+                "Veo models require a regional endpoint. Routing client from '%s' to '%s'",
+                client_location,
+                target_location,
+            )
+            return get_vertex_client_for_location(target_location, settings)
+    return client
 
 
 def _parse_video_operation_result(
@@ -82,9 +105,10 @@ async def generate_video(
     settings: Settings,
 ) -> VideoOperationResponse:
     """
-    Initiates video generation using Vertex AI Veo (e.g. veo-2.0-generate-001).
+    Initiates video generation using Vertex AI Veo (e.g. veo-3.1-generate-001).
     If request.wait_for_completion is True, polls asynchronously until finished or timeout.
     """
+    client = _resolve_video_client(client, settings)
     model_name = request.model or settings.DEFAULT_VIDEO_MODEL
     created_at = datetime.now(timezone.utc).isoformat()
 
@@ -162,10 +186,12 @@ async def generate_video(
 def get_video_operation_status(
     operation_id: str,
     client: genai.Client,
+    settings: Optional[Settings] = None,
 ) -> VideoOperationResponse:
     """
     Polls the current status of a Vertex AI video generation operation.
     """
+    client = _resolve_video_client(client, settings)
     # Use model_construct to avoid static type checker warnings where
     # Pylance/Pyright does not recognize fields inherited from Operation (ABC)
     op = types.GenerateVideosOperation.model_construct(name=operation_id)

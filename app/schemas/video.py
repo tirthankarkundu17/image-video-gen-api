@@ -23,7 +23,7 @@ class VideoGenerationRequest(BaseModel):
         default=None,
         ge=3,
         le=10,
-        description="Video duration in seconds (e.g. 5, 6, or 8 depending on model capabilities)",
+        description="Video duration in seconds (e.g. 4, 6, or 8 depending on model capabilities)",
     )
     fps: Optional[int] = Field(
         default=None,
@@ -38,7 +38,7 @@ class VideoGenerationRequest(BaseModel):
     model: Optional[str] = Field(
         default=None,
         description="Vertex AI model identifier (defaults to configured DEFAULT_VIDEO_MODEL)",
-        examples=["veo-2.0-generate-001"],
+        examples=["veo-3.1-generate-001"],
     )
     wait_for_completion: bool = Field(
         default=False,
