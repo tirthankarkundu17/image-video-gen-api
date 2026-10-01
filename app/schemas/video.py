@@ -44,6 +44,26 @@ class VideoGenerationRequest(BaseModel):
         default=False,
         description="If true, server polls until video completes (subject to timeout); if false, returns operation ID immediately",
     )
+    upload_to_gcs: bool = Field(
+        default=False,
+        description="Optional toggle to automatically upload/save generated video to Google Cloud Storage (GCS)",
+    )
+    gcs_bucket: Optional[str] = Field(
+        default=None,
+        description="Google Cloud Storage bucket name (overrides configured GCS_VIDEO_BUCKET or GCS_IMAGE_BUCKET)",
+    )
+    gcs_path_prefix: Optional[str] = Field(
+        default=None,
+        description="Optional folder/prefix path inside bucket (defaults to 'generated-videos')",
+    )
+    output_gcs_uri: Optional[str] = Field(
+        default=None,
+        description="Explicit Google Cloud Storage URI destination (e.g. gs://bucket-name/folder/)",
+    )
+    include_base64: bool = Field(
+        default=True,
+        description="Whether to include video_base64 in response (can be set to false when upload_to_gcs=true to save bandwidth)",
+    )
 
 
 class VideoOperationResponse(BaseModel):
@@ -53,6 +73,14 @@ class VideoOperationResponse(BaseModel):
     prompt: Optional[str] = Field(default=None, description="Original generation prompt")
     video_uri: Optional[str] = Field(
         default=None, description="Google Cloud Storage URI or external URL to the video file"
+    )
+    video_url: Optional[str] = Field(
+        default=None,
+        description="Presigned downloadable URL to the video file in Cloud Storage (valid for 30 minutes)",
+    )
+    gcs_url: Optional[str] = Field(
+        default=None,
+        description="Alias for video_url (presigned Cloud Storage download URL valid for 30 minutes)",
     )
     video_base64: Optional[str] = Field(
         default=None, description="Base64-encoded video data if downloaded inline"

@@ -121,3 +121,104 @@ def upload_image_bytes(
 
     logger.info("Successfully uploaded image to %s", gcs_uri)
     return gcs_uri, gcs_url
+
+
+def generate_signed_url_for_gcs_uri(
+    gcs_uri: str,
+    expiration_minutes: int = 30,
+    storage_client: Optional[storage.Client] = None,
+    settings: Optional[Settings] = None,
+) -> Optional[str]:
+    """
+    Generates a V4 signed URL for a given gs://bucket/path/to/blob URI.
+    Valid for expiration_minutes (defaults to 30 minutes).
+    Falls back to public storage URL if signing is not supported by credentials or client fails.
+    """
+    if not gcs_uri or not gcs_uri.startswith("gs://"):
+        return None
+
+    path_without_scheme = gcs_uri[5:]
+    if "/" not in path_without_scheme:
+        return None
+
+    bucket_name, blob_name = path_without_scheme.split("/", 1)
+
+    try:
+        client = storage_client or get_storage_client(settings)
+        bucket = client.bucket(bucket_name)
+        blob = bucket.blob(blob_name)
+        return blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(minutes=expiration_minutes),
+            method="GET",
+        )
+    except Exception as exc:
+        logger.warning("Could not generate signed URL for %s: %s", gcs_uri, exc)
+        return f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
+
+
+def upload_video_bytes(
+    video_bytes: bytes,
+    bucket_name: str,
+    destination_blob_name: str,
+    content_type: str = "video/mp4",
+    storage_client: Optional[storage.Client] = None,
+    expiration_minutes: int = 30,
+    settings: Optional[Settings] = None,
+) -> Tuple[str, str]:
+    """
+    Uploads raw video bytes to a Google Cloud Storage bucket and generates a presigned URL.
+
+    Returns:
+        Tuple of (gcs_uri, gcs_url) e.g.
+        ("gs://bucket-name/folder/video.mp4", "https://storage.googleapis.com/...")
+    """
+    client = storage_client or get_storage_client(settings)
+
+    try:
+        bucket = client.bucket(bucket_name)
+        blob = bucket.blob(destination_blob_name)
+        blob.upload_from_string(video_bytes, content_type=content_type)
+    except GoogleCloudError as gcs_err:
+        logger.error(
+            "Google Cloud Storage error uploading to gs://%s/%s: %s",
+            bucket_name,
+            destination_blob_name,
+            gcs_err,
+        )
+        err_msg = str(gcs_err)
+        if "403" in err_msg or "Permission" in err_msg:
+            sa_email = getattr(client._credentials, "service_account_email", "your service account")
+            detail = (
+                f"Permission denied uploading to GCS bucket '{bucket_name}'. "
+                f"Ensure {sa_email} has the 'Storage Object User' role (roles/storage.objectUser) on bucket '{bucket_name}'."
+            )
+        else:
+            detail = f"Google Cloud Storage upload failed: {err_msg}"
+
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=detail,
+        )
+    except Exception as exc:
+        logger.error(
+            "Unexpected error uploading to gs://%s/%s: %s",
+            bucket_name,
+            destination_blob_name,
+            exc,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload video to Cloud Storage: {str(exc)}",
+        )
+
+    gcs_uri = f"gs://{bucket_name}/{destination_blob_name}"
+    gcs_url = generate_signed_url_for_gcs_uri(
+        gcs_uri=gcs_uri,
+        expiration_minutes=expiration_minutes,
+        storage_client=client,
+        settings=settings,
+    ) or f"https://storage.googleapis.com/{bucket_name}/{destination_blob_name}"
+
+    logger.info("Successfully uploaded video to %s", gcs_uri)
+    return gcs_uri, gcs_url
