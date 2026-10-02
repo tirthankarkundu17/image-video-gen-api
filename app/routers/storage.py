@@ -8,32 +8,57 @@ from pydantic import BaseModel, Field
 from app.auth.dependencies import get_current_principal
 from app.auth.gcp_auth import AuthenticatedPrincipal
 from app.config import Settings, get_settings
+from app.schemas.storage import (
+    SignUrlRequest,
+    SignUrlResponse,
+    TestUploadRequest,
+    TestUploadResponse,
+)
+from app.services import storage_service
 from app.services.storage_service import upload_image_bytes
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/storage", tags=["Storage Diagnostics"])
+router = APIRouter(prefix="/api/v1/storage", tags=["Storage"])
 
 
-class TestUploadRequest(BaseModel):
-    bucket: Optional[str] = Field(
-        default=None,
-        description="GCS bucket name to test (defaults to configured GCS_IMAGE_BUCKET)",
+@router.post(
+    "/sign-url",
+    response_model=SignUrlResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Generate a presigned URL for a GCS URI",
+    description=(
+        "Generates a V4 signed URL for a given Google Cloud Storage URI (gs://bucket/object). "
+        "Allows time-limited direct access to private GCS objects."
+    ),
+)
+def sign_gcs_url(
+    payload: SignUrlRequest,
+    principal: AuthenticatedPrincipal = Depends(get_current_principal),
+    settings: Settings = Depends(get_settings),
+) -> SignUrlResponse:
+    logger.info(
+        "Presigned URL requested for uri=%s (expiration=%dm) by %s",
+        payload.gcs_uri,
+        payload.expiration_minutes,
+        principal.email or principal.identifier,
     )
-    path_prefix: Optional[str] = Field(
-        default="test-uploads",
-        description="Folder prefix within the bucket for test files",
+
+    signed_url = storage_service.generate_signed_url(
+        payload.gcs_uri,
+        expiration_minutes=payload.expiration_minutes,
+        settings=settings,
     )
+    if not signed_url:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid GCS URI '{payload.gcs_uri}'. Expected format: 'gs://<bucket-name>/<object-path>'.",
+        )
 
-
-class TestUploadResponse(BaseModel):
-    status: str
-    bucket: str
-    blob_name: str
-    gcs_uri: str
-    gcs_url: str
-    uploaded_at: str
-    message: str
+    return SignUrlResponse(
+        url=signed_url,
+        expires_in=payload.expiration_minutes * 60,
+    )
 
 
 # 1x1 transparent PNG bytes for a valid lightweight test image

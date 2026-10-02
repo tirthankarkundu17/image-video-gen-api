@@ -142,6 +142,8 @@ def generate_signed_url_for_gcs_uri(
         return None
 
     bucket_name, blob_name = path_without_scheme.split("/", 1)
+    if not bucket_name or not blob_name:
+        return None
 
     try:
         client = storage_client or get_storage_client(settings)
@@ -155,6 +157,24 @@ def generate_signed_url_for_gcs_uri(
     except Exception as exc:
         logger.warning("Could not generate signed URL for %s: %s", gcs_uri, exc)
         return f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
+
+
+def generate_signed_url(
+    gcs_uri: str,
+    expiration_minutes: int = 60,
+    storage_client: Optional[storage.Client] = None,
+    settings: Optional[Settings] = None,
+) -> Optional[str]:
+    """
+    Generates a V4 signed URL for a given gs://bucket/path/to/blob URI.
+    Convenience wrapper for generate_signed_url_for_gcs_uri.
+    """
+    return generate_signed_url_for_gcs_uri(
+        gcs_uri=gcs_uri,
+        expiration_minutes=expiration_minutes,
+        storage_client=storage_client,
+        settings=settings,
+    )
 
 
 def upload_video_bytes(

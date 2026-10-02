@@ -74,3 +74,7 @@ async def get_current_principal(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal authentication service error",
         )
+
+
+# Alias for compatibility with code calling verify_api_key dependency
+verify_api_key = get_current_principal
