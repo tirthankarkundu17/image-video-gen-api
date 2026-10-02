@@ -28,13 +28,16 @@ image-video-gen-api/
 │   ├── routers/
 │   │   ├── health.py            # /healthz and /readyz endpoints
 │   │   ├── images.py            # /api/v1/images/generate
+│   │   ├── storage.py           # /api/v1/storage/sign-url & /test-upload
 │   │   └── videos.py            # /api/v1/videos/generate & /api/v1/videos/operations/{id}
 │   ├── schemas/
 │   │   ├── common.py            # Health, readiness, and error models
 │   │   ├── image.py             # Image generation request/response schemas
+│   │   ├── storage.py           # Presigned URL and storage diagnostic schemas
 │   │   └── video.py             # Video generation request/response schemas
 │   ├── services/
 │   │   ├── image_service.py     # Vertex AI Imagen generation logic
+│   │   ├── storage_service.py   # GCS uploads & presigned URL signing
 │   │   ├── vertex_client.py     # Vertex AI Client lifecycle manager
 │   │   └── video_service.py     # Vertex AI Veo generation & LRO tracking
 │   ├── config.py                # Pydantic BaseSettings environment configuration
@@ -236,6 +239,34 @@ curl -X GET "http://localhost:8000/api/v1/videos/operations/projects/YOUR_PROJEC
 }
 ```
 *Note: `video_url` provides a presigned HTTPS URL valid for 30 minutes for direct downloading.*
+
+---
+
+### 4. Generate Presigned URL for GCS Objects
+
+Generate a time-limited V4 signed URL for any private GCS object (`gs://bucket/path/to/blob`).
+
+**Endpoint:** `POST /api/v1/storage/sign-url`
+
+**Request:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/storage/sign-url" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gcs_uri": "gs://your-bucket-name/generated-videos/123.mp4",
+    "expiration_minutes": 60
+  }'
+```
+*(Or with API key: `-H "X-API-Key: your-dev-api-key"`)*
+
+**Response (200 OK):**
+```json
+{
+  "url": "https://storage.googleapis.com/your-bucket-name/generated-videos/123.mp4?X-Goog-Algorithm=GOOG4-RSA-SHA256&...",
+  "expires_in": 3600
+}
+```
 
 ---
 
